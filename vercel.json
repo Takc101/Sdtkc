@@ -1,15 +1,17 @@
 {
-  "build": {
-    "env": {
-      "PHP_VERSION": "8.2"
-    }
-  },
   "functions": {
-    "api/**/*.php": {
-      "runtime": "@vercel/php"
+    "api/verify.php": {
+      "runtime": "vercel-php@0.6.0"
     }
   },
   "routes": [
-    { "src": "/(.*)", "dest": "/$1" }
+    {
+      "src": "/api/verify",
+      "dest": "/api/verify.php"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
   ]
 }
