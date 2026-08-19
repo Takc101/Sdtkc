@@ -308,7 +308,7 @@ if [ -z "$SDTKC_PASSWORD" ]; then
 fi
 
 if command -v curl >/dev/null 2>&1; then
-  SDTKC_JSON="$(curl -s "$SDTKC_RAW")"
+  SDTKC_JSON="$(curl -sL "$SDTKC_RAW")"
 elif command -v wget >/dev/null 2>&1; then
   SDTKC_JSON="$(wget -qO- "$SDTKC_RAW")"
 else
@@ -321,6 +321,14 @@ if [ -z "$SDTKC_JSON" ]; then
   exit 1
 fi
 
+# 去掉所有空格、制表符和换行，避免格式化 JSON 匹配失败
+SDTKC_JSON="$(printf '%s' "$SDTKC_JSON" | tr -d ' \\t\\n')"
+
+if [ -z "$SDTKC_JSON" ]; then
+  echo "卡密数据为空"
+  exit 1
+fi
+
 SDTKC_CARD="$(printf '%s' "$SDTKC_JSON" | tr '}' '\\n' | grep "\\"accessPassword\\":\\"$SDTKC_PASSWORD\\"" | head -n1)"
 
 if [ -z "$SDTKC_CARD" ]; then
@@ -328,7 +336,7 @@ if [ -z "$SDTKC_CARD" ]; then
   exit 1
 fi
 
-SDTKC_EXPIRE="$(printf '%s' "$SDTKC_CARD" | grep -o '\\"expireTs\\": *[0-9]*' | tr -cd '0-9')"
+SDTKC_EXPIRE="$(printf '%s' "$SDTKC_CARD" | grep -o '"expireTs":[0-9][0-9]*' | tr -cd '0-9')"
 
 if [ -z "$SDTKC_EXPIRE" ]; then
   echo "卡密数据异常"
@@ -342,7 +350,7 @@ if [ "$SDTKC_NOW" -gt "$SDTKC_EXPIRE" ]; then
   exit 1
 fi
 
-SDTKC_CARDKEY="$(printf '%s' "$SDTKC_CARD" | grep -o '\\"cardKey\\":\\"[^\\"]*\\"' | cut -d'\\"' -f4)"
+SDTKC_CARDKEY="$(printf '%s' "$SDTKC_CARD" | grep -o '"cardKey":"[^"]*"' | cut -d'"' -f4)"
 echo "验证成功，卡密: $SDTKC_CARDKEY"
 
 # ===== SDTKC 网络验证结束 =====`;
