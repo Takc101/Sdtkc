@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>卡密系统管理</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1c1e21;
+  --border: #e0e2e6;
+  --primary: #2f6fed;
+  --danger: #e5484d;
+  --ok: #1a7f37;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121417;
+    --card: #1c1f24;
+    --text: #e8eaed;
+    --border: #2a2e35;
+    --primary: #5b8cff;
+    --danger: #ff6b6b;
+    --ok: #4ade80;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.container { max-width: 680px; margin: 0 auto; padding: 24px 16px 60px; }
+h1 { font-size: 24px; text-align: center; margin: 24px 0 18px; }
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+}
+input, button {
+  width: 100%;
+  padding: 13px 14px;
+  font-size: 15px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  margin-bottom: 12px;
+  outline: none;
+}
+input:focus { border-color: var(--primary); }
+button {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+button:disabled { opacity: .55; cursor: not-allowed; }
+button.danger { background: var(--danger); }
+.hint { font-size: 13px; color: var(--text); opacity: .6; margin-bottom: 12px; }
+.status { font-size: 14px; margin-top: 8px; white-space: pre-wrap; }
+.success { color: var(--ok); }
+.error { color: var(--danger); }
+.hidden { display: none; }
+a.admin-link { display: block; text-align: center; font-size: 13px; opacity: .6; margin-top: 24px; color: var(--text); }
+.list-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 10px;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.list-info { flex: 1; min-width: 200px; font-size: 14px; }
+.list-info .small { font-size: 12px; opacity: .7; }
+.delete-btn { width: auto; padding: 8px 12px; margin: 0; background: var(--danger); border-radius: 8px; }
+.copy-btn { width: auto; padding: 8px 12px; margin: 10px 0 0; background: var(--ok); }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- 用户主界面 -->
+  <div id="userPanel">
+    <h1>卡密获取</h1>
+    <div class="card">
+      <p class="hint">输入访问密码获取卡密</p>
+      <input id="userPassword" type="password" placeholder="访问密码" autocomplete="off">
+      <button id="getCardBtn">获取卡密</button>
+      <div id="userStatus" class="status"></div>
+    </div>
+    <a class="admin-link" href="#admin" id="adminLink">管理员入口</a>
+  </div>
+
+  <!-- 管理员登录 -->
+  <div id="adminLoginPanel" class="hidden">
+    <h1>管理员登录</h1>
+    <div class="card">
+      <input id="adminPasswordInput" type="password" placeholder="管理员密码">
+      <button id="adminLoginBtn">登录</button>
+      <div id="adminLoginStatus" class="status"></div>
+    </div>
+    <a class="admin-link" href="#" id="backUserLink">返回用户界面</a>
+  </div>
+
+  <!-- 管理员面板 -->
+  <div id="adminPanel" class="hidden">
+    <h1>卡密管理</h1>
+    <div class="card">
+      <h3 style="margin-bottom:12px">添加卡密</h3>
+      <input id="newAccessPassword" placeholder="访问密码（用户获取卡密时输入）">
+      <input id="newCardKey" placeholder="卡密内容（留空自动生成）">
+      <label style="font-size:13px; opacity:.7">到期时间</label>
+      <input id="newExpireAt" type="datetime-local">
+      <button id="addCardBtn">添加卡密</button>
+      <div id="addStatus" class="status"></div>
+    </div>
+    <div class="card">
+      <h3 style="margin-bottom:12px">卡密列表</h3>
+      <div id="cardList"></div>
+      <div id="listStatus" class="status"></div>
+    </div>
+    <a class="admin-link" href="#" id="logoutAdmin">退出登录</a>
+  </div>
+
+</div>
+
+<script>
+// ========== 请改成你自己的配置 ==========
+const CONFIG = {
+  owner: "Takc101",          // 改成你的 GitHub 用户名
+  repo: "sdtkc",                 // 改成你的仓库名
+  token: "ghp_你的Token",            // 改成你的 GitHub Token，仅测试使用！
+  branch: "main",                    // 仓库默认分支，一般是 main
+  dataPath: "data.json",             // 卡密数据文件名
+  adminPassword: "5201bzcbc",         // 管理员密码，改成你自己的
+  rawUrl: "https://raw.githubusercontent.com/takc101/sdtkc/main/data.json"
+};
+// ========================================
+
+const nowTs = () => Math.floor(Date.now() / 1000);
+
+function apiUrl() {
+  return `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/${CONFIG.dataPath}`;
+}
+
+async function loadData() {
+  const res = await fetch(apiUrl(), {
+    headers: {
+      Authorization: `token ${CONFIG.token}`,
+      Accept: "application/vnd.github.v3+json"
+    }
+  });
+  if (res.status === 404) return { cards: [], sha: null };
+  if (!res.ok) throw new Error("GitHub 读取失败: HTTP " + res.status);
+  const json = await res.json();
+  let content = "";
+  try {
+    content = decodeURIComponent(escape(atob(json.content.replace(/\s/g, ""))));
+  } catch (e) {
+    content = "{\"cards\":[]}";
+  }
+  const data = JSON.parse(content || "{\"cards\":[]}");
+  data.sha = json.sha;
+  if (!Array.isArray(data.cards)) data.cards = [];
+  return data;
+}
+
+async function saveData(data) {
+  const json = JSON.stringify({ cards: data.cards }, null, 2);
+  const base64 = btoa(unescape(encodeURIComponent(json)));
+  const body = {
+    message: "update cards",
+    content: base64,
+    branch: CONFIG.branch
+  };
+  if (data.sha) body.sha = data.sha;
+
+  const res = await fetch(apiUrl(), {
+    method: "PUT",
+    headers: {
+      Authorization: `token ${CONFIG.token}`,
+      Accept: "application/vnd.github.v3+json",
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error("GitHub 保存失败: HTTP " + res.status);
+}
+
+function generateCardKey() {
+  const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  let s = "";
+  for (let i = 0; i < 4; i++) {
+    for (let j = 0; j < 4; j++) s += chars[Math.floor(Math.random() * chars.length)];
+    if (i < 3) s += "-";
+  }
+  return "SDTK-" + s;
+}
+
+// 用户获取卡密
+document.getElementById("getCardBtn").addEventListener("click", async () => {
+  const pwd = document.getElementById("userPassword").value.trim();
+  const status = document.getElementById("userStatus");
+  status.className = "status";
+  if (!pwd) { status.textContent = "请输入访问密码"; status.classList.add("error"); return; }
+  try {
+    const data = await loadData();
+    const valid = data.cards.find(c => c.accessPassword === pwd && c.expireTs > nowTs());
+    if (valid) {
+      status.textContent = "获取成功！\n卡密：" + valid.cardKey;
+      status.classList.add("success");
+      document.getElementById("userPassword").value = "";
+    } else {
+      const exists = data.cards.some(c => c.accessPassword === pwd);
+      status.textContent = exists ? "卡密已过期" : "密码错误或卡密不存在";
+      status.classList.add("error");
+    }
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add("error");
+  }
+});
+
+// 管理员入口切换
+const userPanel = document.getElementById("userPanel");
+const adminLoginPanel = document.getElementById("adminLoginPanel");
+const adminPanel = document.getElementById("adminPanel");
+
+document.getElementById("adminLink").addEventListener("click", e => {
+  e.preventDefault();
+  userPanel.classList.add("hidden");
+  adminLoginPanel.classList.remove("hidden");
+  adminPanel.classList.add("hidden");
+});
+document.getElementById("backUserLink").addEventListener("click", e => {
+  e.preventDefault();
+  adminLoginPanel.classList.add("hidden");
+  userPanel.classList.remove("hidden");
+});
+document.getElementById("logoutAdmin").addEventListener("click", e => {
+  e.preventDefault();
+  sessionStorage.removeItem("sdtkc_admin");
+  adminPanel.classList.add("hidden");
+  userPanel.classList.remove("hidden");
+});
+
+// 管理员登录
+document.getElementById("adminLoginBtn").addEventListener("click", () => {
+  const pwd = document.getElementById("adminPasswordInput").value;
+  const status = document.getElementById("adminLoginStatus");
+  status.className = "status";
+  if (pwd === CONFIG.adminPassword) {
+    sessionStorage.setItem("sdtkc_admin", "1");
+    adminLoginPanel.classList.add("hidden");
+    adminPanel.classList.remove("hidden");
+    document.getElementById("adminPasswordInput").value = "";
+    loadAdminCards();
+  } else {
+    status.textContent = "管理员密码错误";
+    status.classList.add("error");
+  }
+});
+
+// 添加卡密
+document.getElementById("addCardBtn").addEventListener("click", async () => {
+  const status = document.getElementById("addStatus");
+  status.className = "status";
+  const accessPassword = document.getElementById("newAccessPassword").value.trim();
+  const cardKeyInput = document.getElementById("newCardKey").value.trim();
+  const expireAtInput = document.getElementById("newExpireAt").value;
+
+  if (!accessPassword) { status.textContent = "访问密码必须填写"; status.classList.add("error"); return; }
+  if (!/^[A-Za-z0-9_-]{1,32}$/.test(accessPassword)) {
+    status.textContent = "访问密码只能包含字母、数字、下划线和短横线";
+    status.classList.add("error");
+    return;
+  }
+  if (!expireAtInput) { status.textContent = "请选择到期时间"; status.classList.add("error"); return; }
+  const expireTs = Math.floor(new Date(expireAtInput).getTime() / 1000);
+  if (expireTs <= nowTs()) { status.textContent = "到期时间必须晚于当前时间"; status.classList.add("error"); return; }
+
+  const cardKey = cardKeyInput || generateCardKey();
+
+  try {
+    const data = await loadData();
+    data.cards.push({
+      id: "c_" + Date.now(),
+      accessPassword,
+      cardKey,
+      expireTs,
+      expireAt: new Date(expireTs * 1000).toISOString()
+    });
+    await saveData(data);
+    status.textContent = "添加成功";
+    status.classList.add("success");
+    document.getElementById("newAccessPassword").value = "";
+    document.getElementById("newCardKey").value = "";
+    document.getElementById("newExpireAt").value = "";
+    loadAdminCards();
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add("error");
+  }
+});
+
+// 加载卡密列表
+async function loadAdminCards() {
+  const list = document.getElementById("cardList");
+  const status = document.getElementById("listStatus");
+  status.textContent = "";
+  try {
+    const data = await loadData();
+    if (!data.cards.length) {
+      list.innerHTML = '<p class="hint">暂无卡密</p>';
+      return;
+    }
+    list.innerHTML = "";
+    data.cards.forEach(card => {
+      const item = document.createElement("div");
+      item.className = "list-item";
+      const expired = card.expireTs <= nowTs();
+      const info = document.createElement("div");
+      info.className = "list-info";
+      info.innerHTML = `
+        <div>卡密：<b>${escapeHtml(card.cardKey)}</b></div>
+        <div>访问密码：${escapeHtml(card.accessPassword)}</div>
+        <div class="small">到期：${new Date(card.expireTs * 1000).toLocaleString()} ${expired ? "（已过期）" : "（可用）"}</div>
+      `;
+      const btn = document.createElement("button");
+      btn.className = "delete-btn";
+      btn.textContent = "删除";
+      btn.addEventListener("click", () => deleteCard(card.id));
+      item.appendChild(info);
+      item.appendChild(btn);
+      list.appendChild(item);
+    });
+  } catch (e) {
+    status.textContent = e.message;
+    status.classList.add("error");
+  }
+}
+
+async function deleteCard(id) {
+  if (!confirm("确定删除这个卡密？")) return;
+  try {
+    const data = await loadData();
+    data.cards = data.cards.filter(c => c.id !== id);
+    await saveData(data);
+    loadAdminCards();
+  } catch (e) {
+    alert("删除失败：" + e.message);
+  }
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, m => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[m]));
+}
+
+// 刷新页面时保持管理员登录状态
+if (sessionStorage.getItem("sdtkc_admin") === "1") {
+  userPanel.classList.add("hidden");
+  adminLoginPanel.classList.add("hidden");
+  adminPanel.classList.remove("hidden");
+  loadAdminCards();
+}
+
+// 支持直接通过 #admin 进入管理员登录
+if (location.hash === "#admin") {
+  userPanel.classList.add("hidden");
+  adminLoginPanel.classList.remove("hidden");
+}
+</script>
+</body>
+</html>

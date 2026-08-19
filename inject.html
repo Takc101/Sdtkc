@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>sdtkc 网络验证</title>
+<style>
+:root {
+  color-scheme: light dark;
+  --bg: #f5f6f8;
+  --card: #ffffff;
+  --text: #1c1e21;
+  --border: #e0e2e6;
+  --primary: #2f6fed;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #121417;
+    --card: #1c1f24;
+    --text: #e8eaed;
+    --border: #2a2e35;
+    --primary: #5b8cff;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+.topbar {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: 56px;
+  background: var(--card);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  z-index: 30;
+  gap: 12px;
+}
+.topbar h1 { font-size: 18px; flex: 1; }
+.hamburger {
+  width: 36px; height: 36px;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.hamburger span {
+  display: block; width: 18px; height: 2px;
+  background: var(--text); margin: 2px 0;
+}
+.sidebar {
+  position: fixed;
+  top: 56px; left: 0; bottom: 0;
+  width: 230px;
+  background: var(--card);
+  border-right: 1px solid var(--border);
+  padding: 16px 0;
+  z-index: 20;
+  transition: transform .2s ease;
+}
+.sidebar button {
+  display: block;
+  width: 100%;
+  padding: 14px 22px;
+  background: none;
+  border: none;
+  color: var(--text);
+  text-align: left;
+  font-size: 15px;
+  cursor: pointer;
+}
+.sidebar button.active { background: var(--primary); color: #fff; }
+.main {
+  margin-left: 230px;
+  margin-top: 56px;
+  padding: 24px 16px 80px;
+  max-width: 720px;
+}
+.page { display: none; }
+.page.active { display: block; }
+.avatar {
+  display: block;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 10px auto 24px;
+  border: 2px solid var(--border);
+  background: var(--card);
+}
+.card-box {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 20px;
+  margin-bottom: 18px;
+  box-shadow: 0 2px 12px rgba(0,0,0,.04);
+}
+.file-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.file-icon {
+  width: 56px; height: 56px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 34px;
+  background: var(--bg);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+}
+.file-name {
+  flex: 1;
+  font-size: 14px;
+  opacity: .75;
+  word-break: break-all;
+}
+.select-btn {
+  width: auto;
+  padding: 10px 16px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.inject-btn {
+  width: 100%;
+  padding: 14px;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.inject-btn:disabled { opacity: .5; cursor: not-allowed; }
+.download-list a {
+  display: block;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 14px;
+}
+.status { font-size: 14px; margin-top: 12px; white-space: pre-wrap; }
+.success { color: #1a7f37; }
+.error { color: #e5484d; }
+@media (prefers-color-scheme: dark) {
+  .success { color: #4ade80; }
+  .error { color: #ff6b6b; }
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main { margin-left: 0; max-width: 100%; }
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="hamburger" id="hamburger">
+    <span></span><span></span><span></span>
+  </div>
+  <h1>sdtkc 网络验证</h1>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <button class="active" data-page="cardPage">卡密对接</button>
+  <button data-page="downloadPage">sd 项目文件下载</button>
+</div>
+
+<div class="main">
+
+  <!-- 卡密对接主界面 -->
+  <section id="cardPage" class="page active">
+    <img src="logo.png" alt="logo" class="avatar" id="avatarImg">
+    <div class="card-box">
+      <div class="file-row">
+        <div class="file-icon">📄</div>
+        <div class="file-name" id="fileName">未选择文件</div>
+        <button class="select-btn" id="selectBtn">选择文件</button>
+      </div>
+    </div>
+    <input type="file" id="fileInput" accept=".sh,text/x-shellscript,application/x-sh" style="display:none">
+    <button class="inject-btn" id="injectBtn" disabled>确认注入</button>
+    <div id="injectStatus" class="status"></div>
+  </section>
+
+  <!-- sd 项目文件下载 -->
+  <section id="downloadPage" class="page">
+    <div class="card-box">
+      <h3 style="margin-bottom:14px">项目文件下载</h3>
+      <div class="download-list">
+        <a href="data.json" download>下载 data.json（卡密数据）</a>
+        <a href="logo.png" download>下载 logo.png（网站图标）</a>
+        <a href="index.html" download>下载 index.html（卡密系统管理）</a>
+        <a href="inject.html" download>下载 inject.html（本页面）</a>
+      </div>
+      <p class="hint" style="font-size:13px; opacity:.6; margin-top:10px">
+        请保证这些文件已经上传到你的 GitHub 仓库根目录。
+      </p>
+    </div>
+  </section>
+
+</div>
+
+<script>
+// ========== 请改成你自己的 raw 地址（必须和 index.html 中的 rawUrl 一致） ==========
+const RAW_URL = "https://raw.githubusercontent.com/takc101/sdtkc/main/data.json";
+// ================================================================
+
+let selectedFile = null;
+
+const hamburger = document.getElementById("hamburger");
+const sidebar = document.getElementById("sidebar");
+const fileInput = document.getElementById("fileInput");
+const selectBtn = document.getElementById("selectBtn");
+const fileNameEl = document.getElementById("fileName");
+const injectBtn = document.getElementById("injectBtn");
+const injectStatus = document.getElementById("injectStatus");
+
+hamburger.addEventListener("click", () => {
+  sidebar.classList.toggle("open");
+});
+
+document.querySelectorAll(".sidebar button").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".sidebar button").forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    const pageId = btn.dataset.page;
+    document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+    document.getElementById(pageId).classList.add("active");
+    sidebar.classList.remove("open");
+  });
+});
+
+selectBtn.addEventListener("click", () => {
+  fileInput.click();
+});
+
+fileInput.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  selectedFile = file;
+  fileNameEl.textContent = file.name;
+  injectBtn.disabled = false;
+  injectStatus.textContent = "";
+  injectStatus.className = "status";
+});
+
+injectBtn.addEventListener("click", async () => {
+  if (!selectedFile) return;
+  try {
+    const original = await selectedFile.text();
+    const injected = injectVerification(original, RAW_URL);
+    downloadTextFile(injected, selectedFile.name.replace(/\.sh$/i, "") + "_sdtkc.sh");
+    injectStatus.textContent = "注入成功！已下载：" + selectedFile.name.replace(/\.sh$/i, "") + "_sdtkc.sh";
+    injectStatus.className = "status success";
+  } catch (e) {
+    injectStatus.textContent = "注入失败：" + e.message;
+    injectStatus.className = "status error";
+  }
+});
+
+function injectVerification(original, rawUrl) {
+  const markerStart = "# ===== SDTKC 网络验证开始 =====";
+  const markerEnd = "# ===== SDTKC 网络验证结束 =====";
+
+  // 如果之前已经注入过，先移除旧的验证块
+  const regex = new RegExp(markerStart + "[\\s\\S]*?" + markerEnd + "\\n?", "g");
+  let cleaned = original.replace(regex, "");
+
+  const block = buildVerificationBlock(rawUrl);
+
+  // 保证从 shebang 之后插入，不破坏第一行
+  const shebangMatch = cleaned.match(/^#!.*\n?/);
+  if (shebangMatch) {
+    return cleaned.slice(0, shebangMatch[0].length) + "\n" + block + "\n" + cleaned.slice(shebangMatch[0].length);
+  } else {
+    return block + "\n" + cleaned;
+  }
+}
+
+function buildVerificationBlock(rawUrl) {
+  return `# ===== SDTKC 网络验证开始 =====
+SDTKC_RAW="${rawUrl}"
+
+printf "请输入访问密码: "
+read SDTKC_PASSWORD
+
+if [ -z "$SDTKC_PASSWORD" ]; then
+  echo "密码不能为空"
+  exit 1
+fi
+
+if command -v curl >/dev/null 2>&1; then
+  SDTKC_JSON="$(curl -s "$SDTKC_RAW")"
+elif command -v wget >/dev/null 2>&1; then
+  SDTKC_JSON="$(wget -qO- "$SDTKC_RAW")"
+else
+  echo "未找到 curl 或 wget，无法验证"
+  exit 1
+fi
+
+if [ -z "$SDTKC_JSON" ]; then
+  echo "无法连接验证服务器"
+  exit 1
+fi
+
+SDTKC_CARD="$(printf '%s' "$SDTKC_JSON" | tr '}' '\\n' | grep "\\"accessPassword\\":\\"$SDTKC_PASSWORD\\"" | head -n1)"
+
+if [ -z "$SDTKC_CARD" ]; then
+  echo "密码错误或卡密不存在"
+  exit 1
+fi
+
+SDTKC_EXPIRE="$(printf '%s' "$SDTKC_CARD" | grep -o '\\"expireTs\\": *[0-9]*' | tr -cd '0-9')"
+
+if [ -z "$SDTKC_EXPIRE" ]; then
+  echo "卡密数据异常"
+  exit 1
+fi
+
+SDTKC_NOW="$(date +%s)"
+
+if [ "$SDTKC_NOW" -gt "$SDTKC_EXPIRE" ]; then
+  echo "卡密已过期"
+  exit 1
+fi
+
+SDTKC_CARDKEY="$(printf '%s' "$SDTKC_CARD" | grep -o '\\"cardKey\\":\\"[^\\"]*\\"' | cut -d'\\"' -f4)"
+echo "验证成功，卡密: $SDTKC_CARDKEY"
+
+# ===== SDTKC 网络验证结束 =====`;
+}
+
+function downloadTextFile(content, filename) {
+  const blob = new Blob([content], { type: "text/x-sh;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>
