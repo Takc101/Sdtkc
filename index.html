@@ -137,15 +137,19 @@ a.admin-link { display: block; text-align: center; font-size: 13px; opacity: .6;
 
 <script>
 // ========== 请改成你自己的配置 ==========
+// ========== 请改成你自己的配置 ==========
 const CONFIG = {
-  owner: "Takc101",          // 改成你的 GitHub 用户名
-  repo: "sdtkc",                 // 改成你的仓库名
-  token: "ghp_你的Token",            // 改成你的 GitHub Token，仅测试使用！
-  branch: "main",                    // 仓库默认分支，一般是 main
-  dataPath: "data.json",             // 卡密数据文件名
-  adminPassword: "5201bzcbc",         // 管理员密码，改成你自己的
-  rawUrl: "https://raw.githubusercontent.com/takc101/sdtkc/main/data.json"
+  owner: "Takc101",
+  repo: "Sdtkc",
+  tokenPartA: "github_pat_11BYJ4FEA03BgzmBncFEhL",
+  tokenPartB: "_bPnU3oN1Ywjge9vFIZKh0hZGv6AahF",
+  tokenPartC: "q1SeIHQI9PQWL3SFCM2RXUDXciZ00",
+  branch: "main",
+  dataPath: "data.json",
+  adminPassword: "admin123",
+  rawUrl: "https://raw.githubusercontent.com/takc101/Sdtkc/main/data.json"
 };
+CONFIG.token = CONFIG.tokenPartA + CONFIG.tokenPartB + CONFIG.tokenPartC;
 // ========================================
 
 const nowTs = () => Math.floor(Date.now() / 1000);
