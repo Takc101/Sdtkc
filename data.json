@@ -1,13 +1,6 @@
 {
   "cards": [
     {
-      "id": "c_1787134267141",
-      "accessPassword": "123456789",
-      "cardKey": "cbc5201bz",
-      "expireTs": 1787139000,
-      "expireAt": "2026-08-19T11:30:00.000Z"
-    },
-    {
       "id": "c_1787140959212",
       "accessPassword": "456789",
       "cardKey": "cbcnb",
