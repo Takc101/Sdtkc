@@ -20,6 +20,13 @@
       "cardKey": "SDTK-F2F3-8T9D-897C-JE2S",
       "expireTs": 1787397000,
       "expireAt": "2026-08-22T11:10:00.000Z"
+    },
+    {
+      "id": "c_1787334670381",
+      "accessPassword": "114514123",
+      "cardKey": "项目捐赠人专属卡密",
+      "expireTs": 4091017800,
+      "expireAt": "2099-08-21T17:50:00.000Z"
     }
   ]
 }
