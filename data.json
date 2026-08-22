@@ -27,6 +27,13 @@
       "cardKey": "Maximilian",
       "expireTs": 253390874220,
       "expireAt": "9999-08-21T17:57:00.000Z"
+    },
+    {
+      "id": "c_1787384321516",
+      "accessPassword": "13765461876738346",
+      "cardKey": "超级无敌宇宙霹雳雷霆卡",
+      "expireTs": 2306043300,
+      "expireAt": "2043-01-28T07:35:00.000Z"
     }
   ]
 }
